@@ -29,26 +29,24 @@ class TurtleNavigationNode(Node):
         ############# [Initial Location] ############
         initial_pose = PoseWithCovarianceStamped()
         initial_pose.header.frame_id = 'map'
-        initial_pose.pose.pose.position.x = 0.0
-        initial_pose.pose.pose.position.y = 0.0
+        initial_pose.pose.pose.position.x = 0.00624
+        initial_pose.pose.pose.position.y = -0.0093
         
-        qq = tf_transformations.quaternion_from_euler(0,0,0)# x, y, z or Roll Pitch Yaw
-        initial_pose.pose.pose.orientation.x = qq[0]
-        initial_pose.pose.pose.orientation.y = qq[1]
-        initial_pose.pose.pose.orientation.z = qq[2]
-        initial_pose.pose.pose.orientation.w = qq[3]
+        initial_pose.pose.pose.orientation.x = 0.0
+        initial_pose.pose.pose.orientation.y = 0.0
+        initial_pose.pose.pose.orientation.z = -0.005
+        initial_pose.pose.pose.orientation.w = 0.999
         self.initial_pose_publisher.publish(initial_pose)
 
         #################################
         # Identify the difference between home and map reference frame
-        # Due to the complexity of various planes, we use the first odometry readback to initialize our home position.
-        # This will minimize guesswork on our end.
-        self.x_home = None
-        self.y_home = None
+        self.x_home = -2.0
+        self.y_home = -0.5
 
         # Initialize goal poses as dictionaries {x, y, w}
-        self.goal_poses.append({'x': 1.3, 'y': 0.9, 'yaw': -30})
-        self.goal_poses.append({'x': 2.0, 'y': 1.5, 'yaw': 60})
+        self.goal_poses.append({'x': -3.545, 'y': -0.947, 'yaw': -30})
+        self.goal_poses.append({'x': -2.664, 'y': 2.687, 'yaw': 60})
+        self.goal_poses.append({'x': 1.583, 'y': 3.1134, 'yaw': 60})
         time.sleep(5)
         self.publish_goal()
 
@@ -58,14 +56,9 @@ class TurtleNavigationNode(Node):
     # Check if current goal pose is reached
         current_pose = msg.pose.pose
 
-        if self.x_home is None:
-            self.x_home = current_pose.position.x
-            self.y_home = current_pose.position.y
-            self.get_logger().info("Initialized home to x: {} y: {}".format(self.x_home, self.y_home))
-
         goal_pose = self.goal_poses[self.current_goal_index]
-        distance_to_goal = (((current_pose.position.x - self.x_home) - goal_pose['x']) ** 2 +
-                            ((current_pose.position.y - self.y_home) - goal_pose['y']) ** 2) ** 0.5
+        distance_to_goal = (((current_pose.position.x) - (goal_pose['x'])) ** 2 + # Removed reference point shift
+                            ((current_pose.position.y) - (goal_pose['y'])) ** 2) ** 0.5 # Removed reference point shift
 
         if distance_to_goal < 0.6: # You can adjust this threshold
             self.get_logger().info("Distance within threshold. {}".format(distance_to_goal))
@@ -87,8 +80,8 @@ class TurtleNavigationNode(Node):
 
     def publish_goal(self):
         pose_msg = PoseStamped()
-        pose_msg.pose.position.x = self.goal_poses[self.current_goal_index]['x']
-        pose_msg.pose.position.y = self.goal_poses[self.current_goal_index]['y']
+        pose_msg.pose.position.x = self.goal_poses[self.current_goal_index]['x'] - self.x_home # Modified to correct coordinates
+        pose_msg.pose.position.y = self.goal_poses[self.current_goal_index]['y'] - self.y_home # Modified to correct coordinates
         yaw_angle = self.goal_poses[self.current_goal_index]['yaw']
         qq = tf_transformations.quaternion_from_euler(0,0,yaw_angle)
         
